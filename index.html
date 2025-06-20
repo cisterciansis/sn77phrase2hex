@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mnemonic to Hex Converter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #0d0208;
+            --foreground: #00ff41;
+            --glow: rgba(0, 255, 65, 0.5);
+            --dim-foreground: #008f25;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--foreground);
+            font-family: 'VT323', monospace;
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            border: 2px solid var(--foreground);
+            padding: 2rem;
+            box-shadow: 0 0 15px var(--glow);
+            text-shadow: 0 0 5px var(--glow);
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid var(--foreground);
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            animation: flicker 1.5s infinite alternate;
+        }
+        
+        .cursor {
+            width: 1.2rem;
+            height: 2.5rem;
+            background: var(--foreground);
+            margin-left: 0.5rem;
+            animation: blink 1s steps(1) infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% {
+                text-shadow:
+                0 0 4px var(--glow),
+                0 0 11px var(--glow),
+                0 0 19px var(--glow);
+                color: var(--foreground);
+            }
+            20%, 24%, 55% {        
+                text-shadow: none;
+                color: var(--dim-foreground);
+            }
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        textarea {
+            width: 100%;
+            background: transparent;
+            border: 1px dashed var(--dim-foreground);
+            color: var(--foreground);
+            font-family: inherit;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            resize: vertical;
+            min-height: 80px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        textarea:focus {
+            border-color: var(--foreground);
+            box-shadow: 0 0 10px var(--glow);
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+
+        button {
+            background: transparent;
+            border: 2px solid var(--foreground);
+            color: var(--foreground);
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.3s, color 0.3s;
+            text-shadow: 0 0 5px var(--glow);
+        }
+
+        button:hover {
+            background: var(--foreground);
+            color: var(--background);
+        }
+
+        button:disabled {
+            border-color: var(--dim-foreground);
+            color: var(--dim-foreground);
+            cursor: not-allowed;
+            text-shadow: none;
+        }
+
+        .results {
+            margin-top: 2rem;
+            border-top: 2px solid var(--foreground);
+            padding-top: 1rem;
+            display: none;
+        }
+
+        .result-item {
+            margin-bottom: 1.5rem;
+        }
+
+        .result-item h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.5rem;
+        }
+        
+        .result-value {
+            background-color: #000;
+            border: 1px solid var(--dim-foreground);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .result-value span {
+            flex-grow: 1;
+        }
+
+        .copy-btn {
+            background: none;
+            border: 1px solid var(--dim-foreground);
+            color: var(--dim-foreground);
+            cursor: pointer;
+            margin-left: 1rem;
+            padding: 5px 10px;
+            font-family: inherit;
+        }
+
+        .copy-btn:hover {
+            border-color: var(--foreground);
+            color: var(--foreground);
+        }
+
+        .next-steps-list, .command-explanation {
+            list-style-type: none;
+            padding-left: 1rem;
+            margin-top: 0.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--dim-foreground);
+        }
+
+        .next-steps-list li::before, .command-explanation li::before {
+            content: '» ';
+            padding-right: 0.5rem;
+            color: var(--foreground);
+        }
+
+        .result-item h4 {
+            margin: 1.5rem 0 0.5rem 0;
+            font-size: 1.2rem;
+            color: var(--foreground);
+        }
+
+        .result-value pre {
+            margin: 0;
+            flex-grow: 1;
+            white-space: pre;
+            overflow-x: auto;
+            font-family: inherit;
+            font-size: inherit;
+            scrollbar-width: thin;
+            scrollbar-color: var(--dim-foreground) var(--background);
+        }
+
+        .result-value pre::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .result-value pre::-webkit-scrollbar-track {
+            background: var(--background);
+        }
+
+        .result-value pre::-webkit-scrollbar-thumb {
+            background-color: var(--dim-foreground);
+            border-radius: 4px;
+            border: 2px solid var(--background);
+        }
+        
+        /* General inline code style */
+        :not(pre) > code {
+            background: #002b00;
+            padding: 2px 5px;
+            border-radius: 3px;
+            color: #9effa1;
+            font-family: inherit;
+        }
+        
+        /* Code style for the command block */
+        .result-value pre code {
+            background: none;
+            padding: 0;
+            border-radius: 0;
+            color: inherit;
+            font-family: inherit;
+        }
+
+        #error, #loader {
+            margin-top: 1rem;
+            color: #ff4141;
+            display: none;
+        }
+
+        #loader {
+            color: var(--foreground);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: var(--dim-foreground);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1 style="visibility: hidden;">sn77-Phrase2Hex</h1>
+            <div class="cursor"></div>
+        </header>
+
+        <main>
+            <form id="converter-form">
+                <label for="mnemonic-input">> Enter your 12 or 24-word mnemonic phrase:</label>
+                <textarea id="mnemonic-input" name="mnemonic" rows="3" placeholder="word1 word2 word3 ..."></textarea>
+                <div class="button-container">
+                    <button id="convert-btn" type="submit">Convert >_</button>
+                </div>
+            </form>
+
+            <div id="loader">Initializing crypto... Please wait.</div>
+            <div id="error"></div>
+
+            <div class="results" id="results-container">
+                <div class="result-item">
+                    <h3>> Your Address (SS58)</h3>
+                    <p style="font-size: 1rem; color: var(--dim-foreground); margin: -0.5rem 0 0.5rem 0;">(Verify this matches your correct coldkey address)</p>
+                    <div class="result-value">
+                        <span id="address-output"></span>
+                        <button class="copy-btn" data-target="address-output">Copy</button>
+                    </div>
+                </div>
+                <div class="result-item">
+                    <h3>> 32-Byte Seed (Hex)</h3>
+                     <p style="font-size: 1rem; color: var(--dim-foreground); margin: -0.5rem 0 0.5rem 0;">(Use this for HOLDER_COLDKEY or MINER_HOTKEY in your .env file)</p>
+                    <div class="result-value">
+                        <span id="seed-output"></span>
+                        <button class="copy-btn" data-target="seed-output">Copy</button>
+                    </div>
+                </div>
+
+                <div class="result-item" id="next-steps-section">
+                    <h3>> Using Your Hex Seed</h3>
+                    <p style="color: var(--dim-foreground); margin-bottom: 2rem;">
+                        The 32-byte hex seed can be used for different roles in Subnet 77. Choose the relevant command for your use case below.
+                        <br><strong>When you're finished, clear this page for security.</strong>
+                    </p>
+
+                    <!-- VOTER / HOLDER_COLDKEY -->
+                    <h4>> For Voters: Update <code>HOLDER_COLDKEY</code></h4>
+                    <p style="font-size: 1rem; color: var(--dim-foreground); margin: -0.5rem 0 0.5rem 0;">
+                        Used to sign votes in the <code>vote.ts</code> script.
+                    </p>
+                    <div class="result-value">
+                        <pre><code id="holder-command-output"></code></pre>
+                        <button class="copy-btn" data-target="holder-command-output">Copy</button>
+                    </div>
+
+                    <!-- MINER / MINER_HOTKEY -->
+                    <h4 style="margin-top: 2rem;">> For Miners: Update <code>MINER_HOTKEY</code></h4>
+                    <p style="font-size: 1rem; color: var(--dim-foreground); margin: -0.5rem 0 0.5rem 0;">
+                        Used for your hotkey in the <code>register.ts</code> script.
+                    </p>
+                    <div class="result-value">
+                        <pre><code id="miner-command-output"></code></pre>
+                        <button class="copy-btn" data-target="miner-command-output">Copy</button>
+                    </div>
+
+                    <p style="margin-top: 2rem; color: var(--dim-foreground);">Each command will:</p>
+                    <ul class="command-explanation">
+                        <li>Navigate into your <code>sn77</code> project directory.</li>
+                        <li>Update the corresponding variable in your <code>.env</code> file.</li>
+                        <li>Print a confirmation message.</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+        <footer>
+            This tool runs entirely in your browser. Your mnemonic is never sent to any server.
+        </footer>
+    </div>
+
+    <!-- Polkadot.js dependencies loaded as ES modules -->
+    <script type="module">
+        import { Keyring } from "https://cdn.jsdelivr.net/npm/@polkadot/keyring@12.6.2/+esm";
+        import { u8aToHex } from "https://cdn.jsdelivr.net/npm/@polkadot/util@12.6.2/+esm";
+        import { cryptoWaitReady, mnemonicToMiniSecret, mnemonicValidate } from "https://cdn.jsdelivr.net/npm/@polkadot/util-crypto@12.6.2/+esm";
+
+        const form = document.getElementById('converter-form');
+        const mnemonicInput = document.getElementById('mnemonic-input');
+        const convertBtn = document.getElementById('convert-btn');
+        const loader = document.getElementById('loader');
+        const errorEl = document.getElementById('error');
+        const resultsContainer = document.getElementById('results-container');
+        const addressOutput = document.getElementById('address-output');
+        const seedOutput = document.getElementById('seed-output');
+        const h1 = document.querySelector('h1');
+        const cursor = document.querySelector('.cursor');
+
+        function typeEffect(element, text, speed, callback) {
+            let i = 0;
+            element.textContent = '';
+            element.style.visibility = 'visible';
+            
+            const h1Animation = 'flicker 1.5s infinite alternate';
+            const cursorAnimation = 'blink 1s steps(1) infinite';
+            
+            const originalH1Animation = getComputedStyle(element).animation;
+            const originalCursorAnimation = getComputedStyle(cursor).animation;
+
+            element.style.animation = 'none';
+            cursor.style.animation = 'none';
+            cursor.style.opacity = '1';
+
+            function type() {
+                if (i < text.length) {
+                    element.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(type, speed);
+                } else {
+                    element.style.animation = originalH1Animation;
+                    cursor.style.animation = originalCursorAnimation;
+                    if (callback) {
+                        callback();
+                    }
+                }
+            }
+            type();
+        }
+
+        function typeValue(element, text, speed, callback) {
+            let i = 0;
+            element.textContent = '';
+            
+            function type() {
+                if (i < text.length) {
+                    element.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(type, speed);
+                } else {
+                    if (callback) {
+                        callback();
+                    }
+                }
+            }
+            type();
+        }
+
+        function showError(message) {
+            errorEl.textContent = `> Error: ${message}`;
+            errorEl.style.display = 'block';
+            resultsContainer.style.display = 'none';
+        }
+
+        function hideError() {
+            errorEl.style.display = 'none';
+        }
+
+        async function handleConversion(event) {
+            event.preventDefault();
+            hideError();
+            resultsContainer.style.display = 'none';
+            convertBtn.disabled = true;
+            loader.textContent = '> Processing...';
+            loader.style.display = 'block';
+
+            const mnemonic = mnemonicInput.value.trim();
+
+            if (!mnemonic) {
+                showError('Mnemonic phrase cannot be empty.');
+                loader.style.display = 'none';
+                convertBtn.disabled = false;
+                return;
+            }
+
+            try {
+                // The core conversion logic.
+                // This must match the behavior of the python `substrate-interface` library.
+                // 1. Validate the mnemonic.
+                const isValid = mnemonicValidate(mnemonic);
+                if (!isValid) {
+                    throw new Error('Invalid mnemonic phrase. Please check for typos or missing words.');
+                }
+                
+                // 2. Convert mnemonic to a 32-byte mini secret (the seed).
+                const miniSecretBytes = mnemonicToMiniSecret(mnemonic);
+
+                // 3. Convert the byte array to a hex string for display.
+                const seedHex = u8aToHex(miniSecretBytes);
+
+                // 4. Create a keyring instance. 'sr25519' is the standard for Substrate.
+                const keyring = new Keyring({ type: 'sr25519' });
+                
+                // 5. Add the keypair from the seed to derive the public address.
+                const keypair = keyring.addFromSeed(miniSecretBytes);
+                const address = keypair.address;
+
+                // Display results with typing animation
+                addressOutput.textContent = '';
+                seedOutput.textContent = '';
+                document.getElementById('holder-command-output').textContent = '';
+                document.getElementById('miner-command-output').textContent = '';
+                
+                resultsContainer.style.display = 'block';
+
+                typeValue(addressOutput, address, 20, () => {
+                    typeValue(seedOutput, seedHex, 20, () => {
+                        const holderCommand = `cd sn77 && \\\n` +
+                                      `sed -i '' "s/HOLDER_COLDKEY=.*/HOLDER_COLDKEY=${seedHex}/" .env && \\\n` +
+                                      `echo "HOLDER_COLDKEY updated in .env file!"`;
+                        document.getElementById('holder-command-output').textContent = holderCommand;
+
+                        const minerCommand = `cd sn77 && \\\n` +
+                             `sed -i '' "s/MINER_HOTKEY=.*/MINER_HOTKEY=${seedHex}/" .env && \\\n` +
+                             `echo "MINER_HOTKEY updated in .env file!"`;
+                        document.getElementById('miner-command-output').textContent = minerCommand;
+                    });
+                });
+
+            } catch (e) {
+                showError(e.message || 'An unknown error occurred during conversion.');
+            } finally {
+                loader.style.display = 'none';
+                convertBtn.disabled = false;
+            }
+        }
+        
+        function handleCopy(event) {
+            if (!event.target.classList.contains('copy-btn')) return;
+            
+            const targetId = event.target.dataset.target;
+            const textToCopy = document.getElementById(targetId).textContent;
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                event.target.textContent = 'Copied!';
+                setTimeout(() => {
+                    event.target.textContent = 'Copy';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
+        // Main initialization
+        async function main() {
+            const headerText = h1.textContent;
+            typeEffect(h1, headerText, 120, null);
+        
+            loader.style.display = 'block';
+            convertBtn.disabled = true;
+            try {
+                await cryptoWaitReady();
+                loader.style.display = 'none';
+                convertBtn.disabled = false;
+                form.addEventListener('submit', handleConversion);
+                resultsContainer.addEventListener('click', handleCopy);
+            } catch (err) {
+                showError('Failed to initialize cryptographic utilities. Please refresh the page.');
+                loader.textContent = '> Error: Could not load crypto module.';
+                console.error(err);
+            }
+        }
+
+        main();
+
+    </script>
+</body>
+</html> 
